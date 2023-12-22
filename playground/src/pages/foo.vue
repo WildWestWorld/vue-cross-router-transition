@@ -1,10 +1,16 @@
 <template>
-  <div flex="~ col" items-center>
-    <div flex="~ gap-2">
-      <button btn @click="() => enlarge()">Enlarge</button>
-      <button btn @click="() => reset()">Reset</button>
+  <div px6 py-2 flex="~ col" items-center>
+    <div p2 flex="~ gap-2">
+      <router-link btn to="/" saturate-0>
+        Back
+      </router-link>
+      <button btn @click="enlarge()">
+        Enlarge
+      </button>
+      <button btn @click="reset()">
+        Reset
+      </button>
     </div>
-
     <!-- 根据路由的修改  FloatProxy 将自己对应的样式信息 传给 FloatContainer -->
     <!-- FloatContainer带动里面的元素进行样式上的变化 -->
 

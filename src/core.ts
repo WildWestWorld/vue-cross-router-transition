@@ -51,6 +51,8 @@ export function createTransform<T extends Component>(
       },
     },
     setup(props) {
+      const router = useRouter();
+
       //将获取到的Context 变成响应式的
       const context = $computed(() => getContext(props.port));
       //context包含 对应的控制元素，控制元素为位置信息，attr
@@ -115,21 +117,35 @@ export function createTransform<T extends Component>(
       // -  attributes: true  表示要监听属性的变化。
       // -  characterData: true  表示要监听文本内容的变化。
 
+      //废弃：废弃原因 在Context中 使用effectScope+useElementBounding 只要元素发生改变就会执行useElementBounding 直接获取对应元素信息
+
       //这里最重要就是监听属性变化的更改
       //之前是proxyElRect 现在是context.proxyEl
-      useMutationObserver(context.proxyEl, () => context.updateRect(), {
-        attributes: true,
-      });
-
+      // useMutationObserver(context.proxyEl, () => context.updateRect(), {
+      //   attributes: true,
+      // });
       // 当页面尺寸发生变化我们也更新对应的元素位置
-      useEventListener("resize", () => context.updateRect());
+
+      //废弃：废弃原因 在Context中 使用effectScope+useElementBounding 只要元素发生改变就会执行useElementBounding 直接获取对应元素信息
+      // useEventListener("resize", () => context.updateRect());
 
       // watchEffect(updateRect)  是 Vue 3 中的一个 API，用于监测响应式数据的变化并执行相应的副作用函数。
       // 在这个例子中， updateRect  是一个副作用函数，它将在响应式数据发生变化时被调用。
       //  watchEffect  函数会自动追踪在副作用函数中使用的响应式数据，并在这些数据发生变化时重新运行副作用函数。
       // 换句话说 proxyEl.value 改变 执行 updateRect
 
-      watchEffect(() => context.updateRect());
+      //废弃：废弃原因 在Context中 使用effectScope+useElementBounding 只要元素发生改变就会执行useElementBounding 直接获取对应元素信息
+      // watchEffect(() => context.updateRect());
+
+      const cleanRouterGuard = router.beforeEach(async () => {
+        context.liftOff();
+        await nextTick();
+      });
+
+      //在元素销毁前 更改动画状态为 开始
+      onBeforeUnmount(() => {
+        cleanRouterGuard();
+      });
 
       //   该组件是核心组件，实际上我们看到的图片显示都是由他来做的
 
@@ -154,26 +170,34 @@ export function createTransform<T extends Component>(
         //如果没有结束就继续渲染/继续执行动画
 
         //传入的组件
-        const comp = h(component, attrs);
-        //遇到的问题(严重):Teleport元素 转换为AniRender时，组件中的定时器会不受控制 直接触发导致 landed状态直接为true，无动画效果
+        const comp = h(component as any, {
+          ...context.props.value,
+          ...context.attrs.value,
+        }); //遇到的问题(严重):Teleport元素 转换为AniRender时，组件中的定时器会不受控制 直接触发导致 landed状态直接为true，无动画效果
         // 当前我们上面的BUG暂时还没有修复，所以我们设置了landing 一直为true，保证代码运行正常
 
-        const teleports = false;
         return h(
           "div",
-          { style: AniElementStyle.value, class: "starport-container" },
-          [
-            teleports
-              ? h(
-                  Teleport,
-                  {
-                    to: proxyEl,
-                    disabled: teleports,
-                  },
-                  [comp]
-                )
-              : comp,
-          ]
+          {
+            style: AniElementStyle.value,
+            class: "starport-container",
+
+            //在元素动画结束后，改变元素动画状态为 结束
+            onTransitionend: async () => {
+              await nextTick();
+              context.land();
+            },
+          },
+          h(
+            Teleport,
+            {
+              //如果动画没有结束 就传到body,如果动画结束了就传送到对应控制器id的位置
+              to: context.isLanded.value ? `#${context.id}` : "body",
+              //如果动画没有结束就不要传送
+              disabled: !context.isLanded.value,
+            },
+            comp
+          )
         );
 
         // return h(
@@ -220,27 +244,29 @@ export function createTransform<T extends Component>(
 
       const context = $computed(() => getContext(props.port));
 
-      context.attrs.value = props.attrs;
-      context.props.value = props.props;
-      // 获取 顶替元素的位置
-      //   这里得到的ref就是元素本身 获取到el我们就发送给对应的全局变量
-      const el = ref<HTMLElement>();
+      // context.attrs.value = props.attrs;
+      // context.props.value = props.props;
+      // // 获取 顶替元素的位置
+      // //   这里得到的ref就是元素本身 获取到el我们就发送给对应的全局变量
+      // const el = ref<HTMLElement>();
 
-      //将FloatProxy得到的prop 和arrts 传入的全局变量中
-      //   metadata.props = props;
-      //   metadata.attrs = attrs;
+      // //将FloatProxy得到的prop 和arrts 传入的全局变量中
+      // //   metadata.props = props;
+      // //   metadata.attrs = attrs;
 
-      //控制元素如果渲染了，就把位置信息传入到代理元素的储存变量中去
-      //proxyEl.value  就在本文件的最上层
-      onMounted(() => {
-        // 将顶替元素赋值给全局变量ProxyEl
-        context.proxyEl.value = el.value;
-        context.updateRect(el.value);
-        context.land();
-      });
+      // //控制元素如果渲染了，就把位置信息传入到代理元素的储存变量中去
+      // //proxyEl.value  就在本文件的最上层
+      // onMounted(() => {
+      //   // 将顶替元素赋值给全局变量ProxyEl
+      //   context.proxyEl.value = el.value;
+      //   context.updateRect(el.value);
+      //   context.land();
+      // });
+
       //在元素被销毁之前 就把代理元素 位置信息全局变量置为默认值
+      //代理元素销毁前，代理元素销毁=代理元素销毁=router切换 ，将动画状态设置为开始
       onBeforeUnmount(() => {
-        context.updateRect(el.value);
+        // context.updateRect(el.value);
         context.liftOff();
         // console.log("元素销毁");
         // proxyEl.value = undefined;
@@ -255,14 +281,20 @@ export function createTransform<T extends Component>(
 
       //  h(类型,props,children)
       //ctx.slots.default 这里一定要写默认的插槽，不然会无法正常 显示动画
+      context.attrs.value = props.attrs;
+      context.props.value = props.props;
+
       return () =>
         h(
           "div",
           {
-            ref: el,
+            //获取元素
+            ref: context.proxyEl,
+            //重要,Teleport 是根据控制器的id来进行传送
+            id: context.id,
             class: "starport-proxy",
           },
-          [ctx.slots.default ? h(ctx.slots.default) : null]
+          ctx.slots.default ? h(ctx.slots.default) : undefined
         );
     },
   }) as T;

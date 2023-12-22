@@ -38,12 +38,9 @@ export class TransformContext {
   //传入的attrs
   attrs: Ref<any> = ref();
   //动画状态
-  landed: Ref<boolean> = ref(false);
+  isLanded: Ref<boolean> = ref(false);
   //控制元素的位置信息
   proxyElRect: Ref<DOMRect | undefined> = ref();
-
-  //动画定时器
-  private landingTimer: any;
 
   //  构造器，构造该类时必须传入对应的Options
   constructor(public options: ResolvedTransformOptions) {}
@@ -55,15 +52,11 @@ export class TransformContext {
 
   //   变更动画状态为开始
   liftOff() {
-    this.landed.value = false;
-    clearTimeout(this.landingTimer);
+    this.isLanded.value = false;
   }
   // 变更动画状态为完成
   land() {
-    clearTimeout(this.landingTimer);
-    this.landingTimer = setTimeout(() => {
-      this.landed.value = true;
-    }, this.options.duration);
+    this.isLanded.value = true;
   }
 }
 

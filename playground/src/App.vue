@@ -4,10 +4,19 @@
   <!-- p= y-10  =>padding-top:2.5rem;padding-bottom:2.5rem; -->
   <!-- text="center gray-700 dark:gray-200" 这个属性将使文本居中对齐，文本颜色为灰色（在默认模式下为灰色 700 级），在  dark` 模式下为灰色 200 级。 -->
 
-  <main font-sans p="x-4 y-10" text="center gray-700 dark:gray-200">
+  <main font-sans text="center gray-700 dark:gray-200" relative>
     <TheNav />
-    <router-view />
+    <router-view v-slot="{ Component }">
+      <!-- 页面切换的css在styles/main.css里面 -->
+      <transition name="page-fade">
+        <component
+          :is="Component"
+          absolute left-0 right-0 top-25
+        />
+      </transition>
+    </router-view>
   </main>
+
 
   <!-- 跨路由动画的条件就是这个 元素 不能被router-view管理 -->
 
