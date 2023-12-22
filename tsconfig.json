@@ -12,6 +12,9 @@
     "skipDefaultLibCheck": true,
     "paths": {
       "~/*": ["./playground/src/*"]
-    }
-  }
+    },
+    //防止virtual:generated-pages import.meta.env 出现提示
+    "types": ["vite/client", "vite-plugin-pages/client"]
+  },
+  "exclude": ["dist", "node_modules"]
 }
