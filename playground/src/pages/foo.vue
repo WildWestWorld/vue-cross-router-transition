@@ -1,15 +1,9 @@
 <template>
   <div px6 py-2 flex="~ col" items-center>
     <div p2 flex="~ gap-2">
-      <router-link btn to="/" saturate-0>
-        Back
-      </router-link>
-      <button btn @click="enlarge()">
-        Enlarge
-      </button>
-      <button btn @click="reset()">
-        Reset
-      </button>
+      <router-link btn to="/" saturate-0> Back </router-link>
+      <button btn @click="enlarge()">Enlarge</button>
+      <button btn @click="reset()">Reset</button>
     </div>
     <!-- 根据路由的修改  FloatProxy 将自己对应的样式信息 传给 FloatContainer -->
     <!-- FloatContainer带动里面的元素进行样式上的变化 -->
@@ -31,6 +25,8 @@
       <TheImageProxy
         :style="{ width: size + 'px', height: size + 'px' }"
         :attrs="{ class: 'rounded-1/2 shadow-xl' }"
+        transition-all
+        duration-600
       />
       <p flex-1 text-left>
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod

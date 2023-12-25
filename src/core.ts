@@ -81,35 +81,56 @@ export function createTransform<T extends Component>(
 
       // 拿到占位元素的信息之后我们利用compute进行 动画元素的移动
       const AniElementStyle = computed((): StyleValue => {
-        const fixed: StyleValue = {
-          transition: `all ${transformOptions.duration}ms ease-in-out`,
-          position: "fixed",
-        };
-
-        //当前选择的元素
+        //当前选择的元素/元素信息
         const proxyElRect = context.proxyElRect;
         const proxyEl = context.proxyEl;
+        const isVisible = context.isVisible;
+        const isLanded = context.isLanded;
 
-        //如果动画正在播放，就不能点击
-        if (context.isLanded) {
-          fixed.pointerEvents = "none";
-        }
-
-        // 如果不存在 占位元素信息/占位元素 就变成透明
-        if (!proxyElRect || !proxyEl) {
-          return {
-            opacity: 0,
-            pointerEvents: "none",
-          };
-        }
-
-        return {
-          ...fixed,
+        // const fixed: StyleValue = {
+        //   transition: `all ${transformOptions.duration}ms ease-in-out`,
+        //   position: "fixed",
+        // };
+        const style: StyleValue = {
+          position: "fixed",
           left: `${proxyElRect.x ?? 0}px`,
           top: `${proxyElRect.y ?? 0}px`,
           width: `${proxyElRect.width ?? 0}px`,
           height: `${proxyElRect.height ?? 0}px`,
         };
+        if (!isVisible || !proxyEl) {
+          return {
+            ...style,
+            display: "none",
+          };
+        }
+        if (isLanded) {
+          style.pointerEvents = "none";
+        } else {
+          style.transition = `all ${transformOptions.duration}ms ease-in-out`;
+        }
+        return style;
+
+        // //如果动画正在播放，就不能点击
+        // if (context.isLanded) {
+        //   fixed.pointerEvents = "none";
+        // }
+
+        // // 如果不存在 占位元素信息/占位元素 就变成透明
+        // if (!proxyElRect || !proxyEl) {
+        //   return {
+        //     opacity: 0,
+        //     pointerEvents: "none",
+        //   };
+        // }
+
+        // return {
+        //   ...fixed,
+        //   left: `${proxyElRect.x ?? 0}px`,
+        //   top: `${proxyElRect.y ?? 0}px`,
+        //   width: `${proxyElRect.width ?? 0}px`,
+        //   height: `${proxyElRect.height ?? 0}px`,
+        // };
       });
 
       // (废弃改为useMutationObserver) 原因 检测不到 元素位置的变化
@@ -151,7 +172,7 @@ export function createTransform<T extends Component>(
       // watchEffect(() => context.updateRect());
 
       const cleanRouterGuard = router.beforeEach(async () => {
-        context.liftOff();
+        await context.liftOff();
         await nextTick();
       });
 
@@ -257,6 +278,8 @@ export function createTransform<T extends Component>(
 
       const context = $computed(() => getContext(props.port));
       const proxyEl = context.elRef();
+      const proxyElRect = context.proxyElRect;
+      const isVisible = context.isVisible;
 
       // context.attrs.value = props.attrs;
       // context.props.value = props.props;
@@ -277,10 +300,16 @@ export function createTransform<T extends Component>(
       //   context.land();
       // });
 
+      //如果元素已经看不见了就 直接降落
+      if (!isVisible) {
+        context.land();
+      }
+
       //在元素被销毁之前 就把代理元素 位置信息全局变量置为默认值
       //代理元素销毁前，代理元素销毁=代理元素销毁=router切换 ，将动画状态设置为开始
       onBeforeUnmount(() => {
         // context.updateRect(el.value);
+        proxyElRect.update();
         context.liftOff();
         // console.log("元素销毁");
         // proxyEl.value = undefined;
