@@ -1,9 +1,10 @@
 import type { UseElementBoundingReturn } from "@vueuse/core";
-import { nanoid } from "nanoid";
+import { nanoid, customAlphabet } from "nanoid";
 import type { Ref, UnwrapNestedRefs } from "vue";
 import { reactive, ref } from "vue";
 import type { ResolvedTransformOptions } from "./types";
 
+//废弃：废弃原因：替换为函数式组件
 // 控制组件 转为类，便于维护
 export class TransformContext {
   //对应的控制元素
@@ -51,4 +52,80 @@ export class TransformContext {
   land() {
     this.isLanded.value = true;
   }
+}
+
+//自定义id
+// customAlphabet允许您使用自己的字母表创建nanoid和 ID size
+const getId = customAlphabet("abcdefghijklmnopqrstuvwxyz", 10);
+
+// 创建控制组件
+export function createTransformContext() {
+  //对应的控制元素
+  const proxyEl: Ref<HTMLElement | undefined> = ref();
+  //传入的props
+  const props: Ref<any> = ref();
+  //传入的attrs
+  const attrs: Ref<any> = ref();
+  //动画状态
+  const isLanded: Ref<boolean> = ref(false);
+  //控制元素的位置信息
+  let proxyElRect: UseElementBoundingReturn = undefined!;
+  // effectScope() 函数用于创建一个 effect 作用域。
+  //effect 作用域可以用来管理 effect 的生命周期，并在 effect 执行时创建一个新的 Vue 实例。
+  //在本例中，effectScope() 函数的第二个参数为 true，表示该 effect 作用域是全局的。
+  //这意味着该 effect 作用域中的 effect 会在所有组件中执行。
+
+  const scope = effectScope(true);
+
+  //创建一个独一无二id 用于管理 我们也根据id 进行Teleport传送元素的
+  const id = getId();
+
+  //this.scope.run() 方法用于在 effect 作用域中执行一个 effect。
+  scope.run(() => {
+    // effect 是 Vue 中的一个功能，用于在组件更新时执行一些逻辑。
+    ///在本例中，this.scope.run() 方法会在 effect 作用域中执行 useElementBounding 函数，该函数用于获取控制元素的位置信息。
+    proxyElRect = useElementBounding(proxyEl);
+  });
+
+  return reactive({
+    proxyEl,
+    props,
+    attrs,
+    isLanded,
+    proxyElRect,
+    scope,
+    id,
+    //返回元素
+    elRef() {
+      return proxyEl;
+    },
+    //更选元素
+    updateRect() {
+      //这里的update 是类型定义给的
+      //proxyElRect:UseElementBoundingReturn
+
+      // type UseElementBoundingReturn = {
+      //       height: vue_demi.Ref<number>;
+      //       bottom: vue_demi.Ref<number>;
+      //       left: vue_demi.Ref<number>;
+      //       right: vue_demi.Ref<number>;
+      //       top: vue_demi.Ref<number>;
+      //       width: vue_demi.Ref<...>;
+      //       x: vue_demi.Ref<...>;
+      //       y: vue_demi.Ref<...>;
+      //       update: () => void;
+      //   }
+
+      proxyElRect.update();
+    },
+    liftOff() {
+      proxyElRect.update();
+      isLanded.value = false;
+      // console.log('lift up')
+    },
+    land() {
+      isLanded.value = true;
+      // console.log('landed up')
+    },
+  });
 }

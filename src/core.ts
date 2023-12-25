@@ -11,7 +11,10 @@ import {
   watchEffect,
 } from "vue";
 import { useEventListener, useMutationObserver } from "@vueuse/core";
-import { TransformContext } from "./context";
+
+import { createTransformContext } from "./context";
+import type { TransformContext } from "./context";
+
 import type { ResolvedTransformOptions, TransformOptions } from "./types";
 
 export function createTransform<T extends Component>(
@@ -21,8 +24,6 @@ export function createTransform<T extends Component>(
   //配置
   const transformOptions: ResolvedTransformOptions = {
     duration: 800,
-    // TODO: fix teleports
-    landing: false,
     ...options,
   };
   //   设置默认的id
@@ -33,7 +34,10 @@ export function createTransform<T extends Component>(
   //   通过id 获取对应 浮空元素， 如果该浮空元素没有id就手动给他创建一个id
   function getContext(port = defaultId) {
     if (!contextMap.has(port))
-      contextMap.set(port, new TransformContext(transformOptions));
+      //废弃：废弃原因：类组件转变为了函数式组件
+      // contextMap.set(port, new TransformContext(transformOptions));
+
+      contextMap.set(port, createTransformContext());
     //! 表示强制类型转换，将 contextMap.get(port) 转换为 TransformContext 类型 让他不能为undefine类型。
     return contextMap.get(port)!;
   }
@@ -56,7 +60,7 @@ export function createTransform<T extends Component>(
       //将获取到的Context 变成响应式的
       const context = $computed(() => getContext(props.port));
       //context包含 对应的控制元素，控制元素为位置信息，attr
-      const { proxyElRect, proxyEl, attrs } = $(context);
+      // const { proxyElRect, proxyEl, attrs } = $(context);
 
       // 代理元素/站位元素的位置信息
       // 这些信息用于移动 我们的动画元素
@@ -81,6 +85,15 @@ export function createTransform<T extends Component>(
           transition: `all ${transformOptions.duration}ms ease-in-out`,
           position: "fixed",
         };
+
+        //当前选择的元素
+        const proxyElRect = context.proxyElRect;
+        const proxyEl = context.proxyEl;
+
+        //如果动画正在播放，就不能点击
+        if (context.isLanded) {
+          fixed.pointerEvents = "none";
+        }
 
         // 如果不存在 占位元素信息/占位元素 就变成透明
         if (!proxyElRect || !proxyEl) {
@@ -171,8 +184,8 @@ export function createTransform<T extends Component>(
 
         //传入的组件
         const comp = h(component as any, {
-          ...context.props.value,
-          ...context.attrs.value,
+          ...context.props,
+          ...context.attrs,
         }); //遇到的问题(严重):Teleport元素 转换为AniRender时，组件中的定时器会不受控制 直接触发导致 landed状态直接为true，无动画效果
         // 当前我们上面的BUG暂时还没有修复，所以我们设置了landing 一直为true，保证代码运行正常
 
@@ -192,9 +205,9 @@ export function createTransform<T extends Component>(
             Teleport,
             {
               //如果动画没有结束 就传到body,如果动画结束了就传送到对应控制器id的位置
-              to: context.isLanded.value ? `#${context.id}` : "body",
+              to: context.isLanded ? `#${context.id}` : "body",
               //如果动画没有结束就不要传送
-              disabled: !context.isLanded.value,
+              disabled: !context.isLanded,
             },
             comp
           )
@@ -243,6 +256,7 @@ export function createTransform<T extends Component>(
       //   const attrs = useAttrs();
 
       const context = $computed(() => getContext(props.port));
+      const proxyEl = context.elRef();
 
       // context.attrs.value = props.attrs;
       // context.props.value = props.props;
@@ -281,15 +295,15 @@ export function createTransform<T extends Component>(
 
       //  h(类型,props,children)
       //ctx.slots.default 这里一定要写默认的插槽，不然会无法正常 显示动画
-      context.attrs.value = props.attrs;
-      context.props.value = props.props;
+      context.attrs = props.attrs;
+      context.props = props.props;
 
       return () =>
         h(
           "div",
           {
             //获取元素
-            ref: context.proxyEl,
+            ref: proxyEl,
             //重要,Teleport 是根据控制器的id来进行传送
             id: context.id,
             class: "starport-proxy",
