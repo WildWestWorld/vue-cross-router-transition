@@ -37,7 +37,14 @@
 
   <!-- 显示元素 渲染的组件已经在floating 已经传递过需要渲染的组件了(TheImageNew) -->
   <!-- 显示元素 -->
-  <TheImageContainer> </TheImageContainer>
+  <!-- <TheImageContainer> </TheImageContainer> -->
+
+  <!-- 显示多个元素，进行多元素路由动画 -->
+  <TheImageContainer port="0" />
+  <TheImageContainer port="1" />
+  <TheImageContainer port="2" />
+  <TheImageContainer port="3" />
+
 </template>
 
 <script setup lang="ts">

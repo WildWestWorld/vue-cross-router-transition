@@ -4,7 +4,6 @@ import type { Component } from "vue";
 //用于设置动画的可配置参数的接口
 export interface TransformOptions {
   duration?: number;
-  landing?: boolean;
 }
 //用于设置动画的可配置参数的接口 后期可能进行拓展
 export type ResolvedTransformOptions = Required<TransformOptions>;

@@ -29,17 +29,17 @@ export function createTransform<T extends Component>(
   //   设置默认的id
   const defaultId = nanoid();
   //   重要：当前浮空元素合集，我们用来管理 浮空元素
-  const contextMap = new Map<string, TransformContext>();
+  const portMap = new Map<string, TransformContext>();
 
   //   通过id 获取对应 浮空元素， 如果该浮空元素没有id就手动给他创建一个id
   function getContext(port = defaultId) {
-    if (!contextMap.has(port))
+    if (!portMap.has(port))
       //废弃：废弃原因：类组件转变为了函数式组件
       // contextMap.set(port, new TransformContext(transformOptions));
 
-      contextMap.set(port, createTransformContext());
+      portMap.set(port, createTransformContext());
     //! 表示强制类型转换，将 contextMap.get(port) 转换为 TransformContext 类型 让他不能为undefine类型。
-    return contextMap.get(port)!;
+    return portMap.get(port)!;
   }
 
   //代理元素的位置信息，我们用这个位置信息来 改变显示元素的位置
@@ -98,18 +98,23 @@ export function createTransform<T extends Component>(
           width: `${proxyElRect.width ?? 0}px`,
           height: `${proxyElRect.height ?? 0}px`,
         };
+        //如果不可见/没有代理元素就 直接设置display:none，直接设置为消失
         if (!isVisible || !proxyEl) {
           return {
             ...style,
             display: "none",
           };
         }
+        //如果动画正在播放，就不能点击
+        //如果动画没结束就是添加
         if (isLanded) {
           style.pointerEvents = "none";
         } else {
           style.transition = `all ${transformOptions.duration}ms ease-in-out`;
         }
         return style;
+
+        //下面这部分废弃：废弃原因：添加了不可见状态
 
         // //如果动画正在播放，就不能点击
         // if (context.isLanded) {
@@ -243,7 +248,7 @@ export function createTransform<T extends Component>(
         // );
       };
     },
-  }) as T;
+  }) ;
 
   //代理元素，也就是 控制器元素，当代理元素改变时，会传入代理元素改变后的位置信息到全局变量
   //显示元素根据全局变量做位置移动的动画效果
@@ -340,7 +345,7 @@ export function createTransform<T extends Component>(
           ctx.slots.default ? h(ctx.slots.default) : undefined
         );
     },
-  }) as T;
+  });
 
   return {
     container,

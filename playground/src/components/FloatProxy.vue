@@ -1,8 +1,9 @@
+<!-- 废弃,原始组件 -->
 <template>
   <!-- ref 不能放到slot上面 -->
   <!-- 用于测试元素的移动位置 -->
   <!-- <div bg-gray-400:10 ref="el"> -->
-    <!-- 为什么要在外层加个ref ，因为我们要利用ref来获取该元素在页面的位置 -->
+  <!-- 为什么要在外层加个ref ，因为我们要利用ref来获取该元素在页面的位置 -->
   <div ref="el">
     <slot></slot>
   </div>
@@ -31,8 +32,6 @@ metadataTest.attrs = attrs;
 
 // 获取 顶替元素的位置
 const el = ref<HTMLElement>();
-
-
 
 onMounted(() => {
   //将顶替元素赋值给全局变量ProxyEl
